@@ -1,12 +1,21 @@
 package Frame;
+
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.geom.Path2D;
-import java.util.LinkedList;
+import java.awt.image.BufferedImage;
+import java.util.*;
 import javax.swing.JComponent;
 
-public class LinesComponent extends JComponent{
+public class LinesComponent extends JComponent {
+    private BufferedImage buffer;
 
-    private static class Line{
+    public LinesComponent() {
+        addComponentListener(new ComponentListenerImpl());
+    }
+
+    private static class Line {
         final double x1;
         final double y1;
         final double x2;
@@ -22,15 +31,15 @@ public class LinesComponent extends JComponent{
         }
     }
 
-    private final LinkedList<Line> lines = new LinkedList<>();
+    private final java.util.List<Line> lines = Collections.synchronizedList(new LinkedList<Line>());
 
 
     public void addLine(double x1, double x2, double x3, double x4, Color color) {
-        lines.add(new Line(x1,x2,x3,x4, color));
+        lines.add(new Line(x1, x2, x3, x4, color));
         repaint();
     }
 
-    Path2D createSmoothLink(Double p1, Double p2,Double p3, Double p4) {
+    Path2D createSmoothLink(Double p1, Double p2, Double p3, Double p4) {
         final double cx1 = (p1 + p3) * 0.5;
         final double cy1 = (p2 + p4) * 0.5;
         final double cx2 = (p1 + p3) * 0.5;
@@ -42,19 +51,49 @@ public class LinesComponent extends JComponent{
         return link;
     }
 
+    private void rebuildBuffer() {
+        int w = getWidth();
+        int h = getHeight();
+        buffer = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = buffer.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        synchronized (lines) {
+            for (Line line : lines) {
+                g2d.setColor(line.color);
+                Path2D link = createSmoothLink(line.x1 * w, line.y1 * h, line.x2 * w, line.y2 * h);
+                g2d.draw(link);
+            }
+        }
+
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g.create();
-        for (Line line : lines) {
-            g2d.setColor(line.color);
-            Path2D link=createSmoothLink(line.x1,line.y1,line.x2,line.y2);
-            g2d.draw(link);
+            rebuildBuffer();
+        g.drawImage(buffer, 0, 0, this);
+
+    }
+
+
+    private class ComponentListenerImpl extends ComponentAdapter {
+
+        private Dimension lastSize = getSize();
+
+        @Override
+        public void componentShown(ComponentEvent e) {
+            if (!getSize().equals(lastSize)) {
+                rebuildBuffer();
+                lastSize = getSize();
+            }
+        }
+
+        @Override
+        public void componentResized(ComponentEvent e) {
+            if (!getSize().equals(lastSize)) {
+                rebuildBuffer();
+                lastSize = getSize();
+            }
         }
     }
-
-    public static void main(String[] args) {
-
-    }
-
 }

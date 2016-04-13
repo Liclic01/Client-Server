@@ -28,18 +28,18 @@ public class MyServer {
 }
 
 class ConnectionClient extends Thread {
-    Socket clientSoc;
-    PrintWriter out;
-    BufferedReader br;
-    BufferedReader in;
+    private Socket clientSoc;
+    private PrintWriter out;
+    private BufferedReader fileBufferedReader;
+    private BufferedReader in;
 
 
-    ConnectionClient(Socket soc) {
+   public ConnectionClient(Socket soc) {
         try {
             clientSoc = soc;
             in=new BufferedReader(new InputStreamReader(clientSoc.getInputStream()));
             out = new PrintWriter(clientSoc.getOutputStream(),true);
-            br = new BufferedReader(new FileReader("D:\\Java\\Java programs\\MyServer\\src\\main\\resources\\testFile"));
+            fileBufferedReader= new BufferedReader(new FileReader("D:\\Java\\Java programs\\MyServer\\src\\main\\resources\\testFile"));
             System.out.println("Client Connected...");
         } catch (IOException e) {
             e.printStackTrace();
@@ -50,7 +50,6 @@ class ConnectionClient extends Thread {
         while (true) {
             try {
                 String command;
-                System.out.println("Waiting for Command ...");
                 try {
                     command=in.readLine();
                 }catch (SocketException e) {
@@ -71,7 +70,7 @@ class ConnectionClient extends Thread {
 
     private void commandWriter(PrintWriter out) throws IOException{
         String line;
-        while((line=br.readLine())!=null){
+        while((line=fileBufferedReader.readLine())!=null){
             out.println(line);
         }
     }

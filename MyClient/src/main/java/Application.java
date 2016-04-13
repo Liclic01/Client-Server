@@ -10,7 +10,7 @@ import java.net.Socket;
 public class Application {
     public static void main(String[] args) {
 
-        try (Socket soc = new Socket("127.0.0.1", 29288)) {
+        try (Socket soc = new Socket(args[0], 29288)) {
             MyClient myClient = new MyClient(soc);
             myClient.createFrame();
 
